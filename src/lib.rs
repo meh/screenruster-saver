@@ -30,7 +30,7 @@ mod saver;
 pub use saver::Saver;
 
 mod channel;
-pub use channel::Channel;
+pub use channel::{Request, Response, Channel};
 
 mod renderer;
 pub use renderer::Renderer;

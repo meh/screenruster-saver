@@ -55,17 +55,12 @@ impl Channel {
 
 		// Reader.
 		thread::spawn(move || {
-			let mut input = BufReader::new(input);
-			let mut line  = String::new();
-
-			loop {
-				line.clear();
-
-				if input.read_line(&mut line).is_err() {
+			for line in BufReader::new(input).lines() {
+				if line.is_err() {
 					break;
 				}
 
-				if let Ok(message) = json::parse(&line) {
+				if let Ok(message) = json::parse(&line.unwrap()) {
 					sender.send(match json!(message["type"].as_str()) {
 						"target" => {
 							Request::Target {

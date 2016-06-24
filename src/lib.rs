@@ -6,6 +6,8 @@ extern crate x11;
 #[macro_use]
 #[macro_reexport(debug, error, info, log, log_enabled, trace, warn)]
 pub extern crate log;
+#[doc(hidden)]
+pub use log::{LogLocation, LogLevel, __static_max_level, max_log_level, __log, __enabled};
 extern crate env_logger;
 
 #[macro_reexport(implement_vertex, program, uniform)]
@@ -18,6 +20,8 @@ pub extern crate image;
 #[macro_use]
 #[macro_reexport(object, array)]
 pub extern crate json;
+#[doc(hidden)]
+pub use json::{JsonValue};
 
 #[macro_use]
 mod util;

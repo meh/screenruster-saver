@@ -20,7 +20,7 @@ pub trait Saver {
 	fn dialog(&mut self, active: bool) { }
 
 	/// The password is being interacted with.
-	fn password(&mut self, value: Password);
+	fn password(&mut self, value: Password) { }
 
 	/// The saver has been started, useful to implement a fade in or animation to
 	/// only show at the beginning.

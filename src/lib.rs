@@ -11,7 +11,8 @@ pub use gl::{program, Version, Api, vertex, backend, uniforms};
 pub extern crate image;
 
 #[macro_use]
-extern crate json;
+#[macro_reexport(object, array)]
+pub extern crate json;
 
 #[macro_use]
 mod util;

@@ -56,7 +56,7 @@ impl Channel {
 		// Reader.
 		thread::spawn(move || {
 			let mut input = BufReader::new(input);
-			let mut line = String::new();
+			let mut line  = String::new();
 
 			while let Ok(..) = input.read_line(&mut line) {
 				if let Ok(message) = json::parse(&line) {
@@ -114,17 +114,17 @@ impl Channel {
 
 			while let Ok(response) = receiver.recv() {
 				output.write_all(json::stringify(match response {
-					Response::Initialized => {
-						object!{ "type" => "initialized" }
-					}
+					Response::Initialized => object!{
+						"type" => "initialized"
+					},
 
-					Response::Started => {
-						object!{ "type" => "started" }
-					}
+					Response::Started => object!{
+						"type" => "started"
+					},
 
-					Response::Stopped => {
-						object!{ "type" => "stopped" }
-					}
+					Response::Stopped => object!{
+						"type" => "stopped"
+					},
 				}).as_bytes()).unwrap();
 
 				output.write_all(b"\n").unwrap();

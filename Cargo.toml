@@ -1,0 +1,15 @@
+[package]
+name    = "screenruster-saver"
+version = "0.1.0"
+
+authors = ["meh. <meh@schizofreni.co>"]
+license = "WTFPL"
+
+[dependencies]
+image = "0.10"
+glium = { version = "0.14", default-features = false }
+
+libc  = "0.2"
+x11   = { version = "2", features = ["xlib", "glx"] }
+
+json = "0.7"

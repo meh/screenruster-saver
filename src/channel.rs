@@ -58,12 +58,18 @@ impl Channel {
 			let mut input = BufReader::new(input);
 			let mut line  = String::new();
 
-			while let Ok(..) = input.read_line(&mut line) {
+			loop {
+				line.clear();
+
+				if input.read_line(&mut line).is_err() {
+					break;
+				}
+
 				if let Ok(message) = json::parse(&line) {
 					sender.send(match json!(message["type"].as_str()) {
 						"target" => {
 							Request::Target {
-								display: json!(message["target"].as_str()).into(),
+								display: json!(message["display"].as_str()).into(),
 								screen:  json!(message["screen"].as_i32()),
 								window:  json!(message["window"].as_u64()),
 							}
@@ -103,8 +109,6 @@ impl Channel {
 							continue
 					}).unwrap();
 				}
-
-				line.clear();
 			}
 		});
 

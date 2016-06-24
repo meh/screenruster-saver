@@ -37,5 +37,5 @@ pub trait Saver {
 	fn update(&mut self) { }
 
 	/// Render the saver.
-	fn render<S: gl::Surface>(&self, target: &mut S, screen: &gl::texture::Texture2d) { }
+	fn render<S: gl::Surface>(&self, target: &mut S, screen: &gl::texture::Texture2d);
 }

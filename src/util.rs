@@ -11,6 +11,17 @@ macro_rules! json {
 	);
 }
 
+macro_rules! exit {
+	($body:expr) => (
+		if let Ok(value) = $body {
+			value
+		}
+		else {
+			break;
+		}
+	);
+}
+
 pub trait DurationExt {
 	fn as_msecs(&self) -> u64;
 	fn as_nanosecs(&self) -> u64;

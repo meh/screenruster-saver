@@ -86,7 +86,7 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
 	loop {
 		select! {
 			message = c.recv() => {
-				match message.unwrap() {
+				match exit!(message) {
 					channel::Request::Target { .. } | channel::Request::Config(..) => (),
 
 					channel::Request::Start => {
@@ -108,7 +108,7 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
 			},
 
 			message = r.recv() => {
-				match message.unwrap() {
+				match exit!(message) {
 					renderer::Response::Initialized => {
 						channel.send(channel::Response::Initialized).unwrap();
 					}

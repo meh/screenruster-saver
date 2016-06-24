@@ -59,8 +59,14 @@ impl Renderer {
 			saver.graphics(display.context());
 			sender.send(Response::Initialized).unwrap();
 
-			sender.send(Response::Started).unwrap();
+			while let Ok(message) = receiver.recv() {
+				if let Request::Start = message {
+					break;
+				}
+			}
+
 			saver.begin();
+			sender.send(Response::Started).unwrap();
 
 			let     step     = (S::step() * 1_000_000.0).round() as u64;
 			let mut lag      = 0;

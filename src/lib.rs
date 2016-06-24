@@ -3,6 +3,11 @@
 extern crate libc;
 extern crate x11;
 
+#[macro_use]
+#[macro_reexport(debug, error, info, log, log_enabled, trace, warn)]
+pub extern crate log;
+extern crate env_logger;
+
 #[macro_reexport(implement_vertex, program, uniform)]
 pub extern crate glium as gl;
 #[doc(hidden)]
@@ -39,18 +44,35 @@ mod display;
 pub use display::Display;
 
 use std::io;
+use std::env;
 
 pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
+	// Initialize logger.
+	{
+		let mut builder = env_logger::LogBuilder::new();
+		let     pid     = unsafe { libc::getpid() };
+
+		builder.format(move |record| {
+			format!("{}:{}:{}: {}", record.level(), pid, record.location().module_path(), record.args())
+		});
+
+		if env::var("RUST_LOG").is_ok() {
+			builder.parse(&env::var("RUST_LOG").unwrap());
+		}
+
+		builder.init().unwrap()
+	}
+
 	let channel = Channel::new(io::stdin(), io::stdout());
 
-	if let Ok(channel::Request::Config(config)) = channel.recv() {
+	if let Ok(Request::Config(config)) = channel.recv() {
 		saver.config(config);
 	}
 	else {
 		return Err(Error::Protocol);
 	}
 
-	let renderer = if let Ok(channel::Request::Target { display, screen, window }) = channel.recv() {
+	let renderer = if let Ok(Request::Target { display, screen, window }) = channel.recv() {
 		Renderer::new(display, screen, window, saver)
 	}
 	else {
@@ -65,7 +87,23 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
 		select! {
 			message = c.recv() => {
 				match message.unwrap() {
-					_ => ()
+					channel::Request::Target { .. } | channel::Request::Config(..) => (),
+
+					channel::Request::Start => {
+						renderer.start().unwrap();
+					}
+
+					channel::Request::Dialog(active) => {
+						renderer.dialog(active).unwrap();
+					}
+
+					channel::Request::Password(password) => {
+						renderer.password(password).unwrap();
+					}
+
+					channel::Request::Stop => {
+						renderer.stop().unwrap();
+					}
 				}
 			},
 

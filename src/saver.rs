@@ -14,7 +14,10 @@ pub trait Saver {
 	fn config(&mut self, config: json::JsonValue) { }
 
 	/// Initialize any graphics related stuff.
-	fn graphics(&mut self, context: Rc<gl::backend::Context>) { }
+	fn initialize(&mut self, context: Rc<gl::backend::Context>) { }
+
+	/// Resize the viewport.
+	fn resize(&mut self, context: Rc<gl::backend::Context>) { }
 
 	/// The dialog is now `active` or not.
 	fn dialog(&mut self, active: bool) { }

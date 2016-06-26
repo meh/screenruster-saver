@@ -15,6 +15,12 @@ pub struct Renderer {
 
 #[derive(Debug)]
 pub enum Request {
+	/// Resize the renderer viewport.
+	Resize {
+		width:  u32,
+		height: u32,
+	},
+
 	/// Whether the dialog is being opened or closed.
 	Dialog(bool),
 
@@ -46,7 +52,8 @@ impl Renderer {
 		let (i_sender, receiver) = channel();
 
 		thread::spawn(move || {
-			let display = Display::open(display, screen, window).unwrap();
+			let mut display = Display::open(display, screen, window).unwrap();
+
 			let texture = {
 				let image = display.screenshot();
 				let size  = image.dimensions();
@@ -56,7 +63,7 @@ impl Renderer {
 				gl::texture::Texture2d::new(&display.context(), image).unwrap()
 			};
 
-			saver.graphics(display.context());
+			saver.initialize(display.context());
 			sender.send(Response::Initialized).unwrap();
 
 			while let Ok(message) = receiver.recv() {
@@ -105,6 +112,11 @@ impl Renderer {
 							saver.password(password);
 						}
 
+						Request::Resize { width, height } => {
+							display.resize(width, height);
+							saver.resize(display.context());
+						}
+
 						_ => ()
 					}
 				}
@@ -122,6 +134,10 @@ impl Renderer {
 			receiver: i_receiver,
 			sender:   i_sender,
 		}
+	}
+
+	pub fn resize(&self, width: u32, height: u32) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Resize { width: width, height: height })
 	}
 
 	pub fn dialog(&self, active: bool) -> Result<(), SendError<Request>> {

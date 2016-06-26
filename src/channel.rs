@@ -13,6 +13,9 @@ pub struct Channel {
 
 #[derive(Clone, Debug)]
 pub enum Request {
+	/// Saver configuration.
+	Config(JsonValue),
+
 	/// Drawable target.
 	Target {
 		display: String,
@@ -20,8 +23,11 @@ pub enum Request {
 		window:  u64,
 	},
 
-	/// Saver configuration.
-	Config(JsonValue),
+	/// Resize the viewport.
+	Resize {
+		width: u32,
+		height: u32,
+	},
 
 	/// Whether the dialog is being opened or closed.
 	Dialog(bool),
@@ -62,6 +68,10 @@ impl Channel {
 
 				if let Ok(message) = json::parse(&line.unwrap()) {
 					sender.send(match json!(message["type"].as_str()) {
+						"config" => {
+							Request::Config(message["config"].clone())
+						}
+
 						"target" => {
 							Request::Target {
 								display: json!(message["display"].as_str()).into(),
@@ -70,8 +80,11 @@ impl Channel {
 							}
 						}
 
-						"config" => {
-							Request::Config(message["config"].clone())
+						"resize" => {
+							Request::Resize {
+								width:  json!(message["width"].as_u32()),
+								height: json!(message["height"].as_u32()),
+							}
 						}
 
 						"dialog" => {

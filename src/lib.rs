@@ -91,7 +91,12 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
 		select! {
 			message = c.recv() => {
 				match exit!(message) {
-					channel::Request::Target { .. } | channel::Request::Config(..) => (),
+					channel::Request::Target { .. } | channel::Request::Config(..) =>
+						unreachable!(),
+
+					channel::Request::Resize { width, height } => {
+						renderer.resize(width, height).unwrap();
+					}
 
 					channel::Request::Start => {
 						renderer.start().unwrap();

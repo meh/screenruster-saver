@@ -1,6 +1,7 @@
 use std::ptr;
 use std::ffi::CString;
 use std::rc::Rc;
+use std::cell::Cell;
 
 use libc::{c_int, c_uint};
 use std::os::raw::c_void;
@@ -11,18 +12,19 @@ use image;
 use error;
 
 pub struct Display {
-	context: Rc<gl::backend::Context>,
-	backend: Rc<Backend>,
+	pub context: Rc<gl::backend::Context>,
+	pub backend: Rc<Backend>,
 }
 
+#[derive(Debug)]
 pub struct Backend {
 	display: *mut xlib::Display,
 	root:    xlib::Window,
 	context: glx::GLXContext,
 	window:  xlib::Window,
 
-	width:  u32,
-	height: u32,
+	width:  Cell<u32>,
+	height: Cell<u32>,
 }
 
 impl Display {
@@ -47,8 +49,8 @@ impl Display {
 				context: context,
 				window:  id,
 
-				width:  width,
-				height: height,
+				width:  Cell::new(width),
+				height: Cell::new(height),
 			});
 
 			Ok(Display {
@@ -62,22 +64,29 @@ impl Display {
 		self.context.clone()
 	}
 
-	pub fn draw(&self) -> gl::Frame {
+	pub fn draw(&mut self) -> gl::Frame {
 		gl::Frame::new(self.context.clone(), self.context.get_framebuffer_dimensions())
 	}
 
+	pub fn resize(&mut self, width: u32, height: u32) {
+		self.backend.width.set(width);
+		self.backend.height.set(height);
+	}
+
 	pub fn screenshot(&self) -> image::DynamicImage {
+		let width  = self.backend.width.get();
+		let height = self.backend.height.get();
+
 		unsafe {
 			let ximage = xlib::XGetImage(self.backend.display, self.backend.root,
-				0, 0, self.backend.width, self.backend.height,
-				xlib::XAllPlanes(), xlib::ZPixmap)
+				0, 0, width, height, xlib::XAllPlanes(), xlib::ZPixmap)
 					.as_mut().unwrap();
 
 			let r = (*ximage).red_mask;
 			let g = (*ximage).green_mask;
 			let b = (*ximage).blue_mask;
 
-			let mut image = image::DynamicImage::new_rgb8(self.backend.width, self.backend.height);
+			let mut image = image::DynamicImage::new_rgb8(width, height);
 
 			for (x, y, px) in image.as_mut_rgb8().unwrap().enumerate_pixels_mut() {
 				let pixel = xlib::XGetPixel(ximage, x as c_int, y as c_int);
@@ -115,7 +124,7 @@ unsafe impl gl::backend::Backend for Backend {
 	}
 
 	fn get_framebuffer_dimensions(&self) -> (u32, u32) {
-		(self.width, self.height)
+		(self.width.get(), self.height.get())
 	}
 
 	fn is_current(&self) -> bool {

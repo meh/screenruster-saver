@@ -12,8 +12,8 @@ use image;
 use error;
 
 pub struct Display {
-	pub context: Rc<gl::backend::Context>,
-	pub backend: Rc<Backend>,
+	context: Rc<gl::backend::Context>,
+	backend: Rc<Backend>,
 }
 
 #[derive(Debug)]
@@ -28,6 +28,7 @@ pub struct Backend {
 }
 
 impl Display {
+	/// Open the matching Display.
 	pub fn open<N: AsRef<str>>(name: N, screen: i32, id: u64) -> error::Result<Display> {
 		unsafe {
 			let name    = CString::new(name.as_ref().as_bytes()).unwrap();
@@ -60,19 +61,23 @@ impl Display {
 		}
 	}
 
+	/// Get the OpenGL context.
 	pub fn context(&self) -> Rc<gl::backend::Context> {
 		self.context.clone()
 	}
 
+	/// Get a drawable OpenGL surface.
 	pub fn draw(&mut self) -> gl::Frame {
 		gl::Frame::new(self.context.clone(), self.context.get_framebuffer_dimensions())
 	}
 
+	/// Resize the Display.
 	pub fn resize(&mut self, width: u32, height: u32) {
 		self.backend.width.set(width);
 		self.backend.height.set(height);
 	}
 
+	/// Take a screenshot.
 	pub fn screenshot(&self) -> image::DynamicImage {
 		let width  = self.backend.width.get();
 		let height = self.backend.height.get();

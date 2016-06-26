@@ -17,8 +17,8 @@ pub enum Error {
 #[derive(Debug)]
 pub enum Display {
 	NotFound,
-	NoVisual,
-	NoContext,
+	Visual,
+	Context,
 }
 
 impl From<io::Error> for Error {
@@ -53,17 +53,17 @@ impl fmt::Display for Error {
 
 impl error::Error for Error {
 	fn description(&self) -> &str {
-		match self {
-			&Error::Io(ref err) =>
+		match *self {
+			Error::Io(ref err) =>
 				err.description(),
 
-			&Error::ContextCreation(..) =>
+			Error::ContextCreation(..) =>
 				"OpenGL error.",
 
-			&Error::SwapBuffers(ref err) =>
+			Error::SwapBuffers(ref err) =>
 				err.description(),
 
-			&Error::Protocol =>
+			Error::Protocol =>
 				"Protocol error.",
 		}
 	}

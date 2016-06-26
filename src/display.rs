@@ -38,10 +38,10 @@ impl Display {
 
 			let info = glx::glXChooseVisual(display, screen,
 				[glx::GLX_RGBA, glx::GLX_DEPTH_SIZE, 24, glx::GLX_DOUBLEBUFFER, 0].as_ptr() as *mut _)
-					.as_mut().ok_or(error::Display::NoVisual)?;
+					.as_mut().ok_or(error::Display::Visual)?;
 
 			let context = glx::glXCreateContext(display, info, ptr::null_mut(), 1)
-				.as_mut().ok_or(error::Display::NoContext)?;
+				.as_mut().ok_or(error::Display::Context)?;
 
 			let backend = Rc::new(Backend {
 				display: display,

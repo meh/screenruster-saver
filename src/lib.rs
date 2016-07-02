@@ -35,6 +35,9 @@ pub use state::State;
 mod password;
 pub use password::Password;
 
+pub mod pointer;
+pub use pointer::Pointer;
+
 mod saver;
 pub use saver::Saver;
 
@@ -102,8 +105,8 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
 						renderer.start().unwrap();
 					}
 
-					channel::Request::Dialog(active) => {
-						renderer.dialog(active).unwrap();
+					channel::Request::Pointer(pointer) => {
+						renderer.pointer(pointer).unwrap();
 					}
 
 					channel::Request::Password(password) => {

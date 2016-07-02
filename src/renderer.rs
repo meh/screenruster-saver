@@ -5,7 +5,7 @@ use std::sync::mpsc::{Receiver, Sender, SendError, channel};
 use gl::{self, Surface};
 use image::GenericImage;
 
-use {Display, Saver, State, Password};
+use {Display, Saver, State, Password, Pointer};
 use util::DurationExt;
 
 pub struct Renderer {
@@ -21,8 +21,8 @@ pub enum Request {
 		height: u32,
 	},
 
-	/// Whether the dialog is being opened or closed.
-	Dialog(bool),
+	/// The pointer has generated events.
+	Pointer(Pointer),
 
 	/// The password field has changed.
 	Password(Password),
@@ -104,8 +104,8 @@ impl Renderer {
 							saver.end();
 						}
 
-						Request::Dialog(active) => {
-							saver.dialog(active);
+						Request::Pointer(pointer) => {
+							saver.pointer(pointer);
 						}
 
 						Request::Password(password) => {
@@ -140,8 +140,8 @@ impl Renderer {
 		self.sender.send(Request::Resize { width: width, height: height })
 	}
 
-	pub fn dialog(&self, active: bool) -> Result<(), SendError<Request>> {
-		self.sender.send(Request::Dialog(active))
+	pub fn pointer(&self, pointer: Pointer) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Pointer(pointer))
 	}
 
 	pub fn password(&self, password: Password) -> Result<(), SendError<Request>> {

@@ -4,7 +4,7 @@ use std::sync::mpsc::{Receiver, RecvError, Sender, SendError, channel};
 
 use json::{self, JsonValue};
 
-use {Password};
+use {Password, Pointer};
 
 pub struct Channel {
 	receiver: Receiver<Request>,
@@ -29,8 +29,8 @@ pub enum Request {
 		height: u32,
 	},
 
-	/// Whether the dialog is being opened or closed.
-	Dialog(bool),
+	/// Pointer events.
+	Pointer(Pointer),
 
 	/// The password field has changed.
 	Password(Password),
@@ -87,8 +87,25 @@ impl Channel {
 							}
 						}
 
-						"dialog" => {
-							Request::Dialog(message["active"].as_bool().unwrap_or(false))
+						"pointer" => {
+							if !message["move"].is_null() {
+								Request::Pointer(Pointer::Move {
+									x: json!(message["move"]["x"].as_i32()),
+									y: json!(message["move"]["y"].as_i32()),
+								})
+							}
+							else if !message["button"].is_null() {
+								Request::Pointer(Pointer::Button {
+									x: json!(message["button"]["x"].as_i32()),
+									y: json!(message["button"]["y"].as_i32()),
+
+									button: json!(message["button"]["button"].as_u8()),
+									press:  json!(message["button"]["press"].as_bool()),
+								})
+							}
+							else {
+								continue;
+							}
 						}
 
 						"password" => {

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gl;
 use json;
 
-use {State, Password};
+use {State, Password, Pointer};
 
 #[allow(unused_variables)]
 pub trait Saver {
@@ -19,11 +19,11 @@ pub trait Saver {
 	/// Resize the viewport.
 	fn resize(&mut self, context: Rc<gl::backend::Context>) { }
 
-	/// The dialog is now `active` or not.
-	fn dialog(&mut self, active: bool) { }
-
 	/// The password is being interacted with.
 	fn password(&mut self, value: Password) { }
+
+	/// The pointer moved or clicked.
+	fn pointer(&mut self, value: Pointer) { }
 
 	/// The saver has been started, useful to implement a fade in or animation to
 	/// only show at the beginning.

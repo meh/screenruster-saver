@@ -9,10 +9,9 @@ license = "WTFPL"
 log        = "0.3"
 env_logger = "0.3"
 
-image = "0.10"
-glium = { version = "0.14", default-features = false }
-
 libc  = "0.2"
 x11   = { version = "2", features = ["xlib", "glx"] }
+glium = { version = "0.15", default-features = false }
+image = "0.10"
 
 json = "0.7"

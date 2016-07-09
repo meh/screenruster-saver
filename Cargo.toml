@@ -5,13 +5,17 @@ version = "0.1.0"
 authors = ["meh. <meh@schizofreni.co>"]
 license = "WTFPL"
 
+description = "Rust API for ScreenRuster."
+repository  = "https://github.com/meh/screenruster-saver"
+keywords    = ["graphics", "x11"]
+
 [dependencies]
 log        = "0.3"
 env_logger = "0.3"
+
+json = "0.7"
 
 libc  = "0.2"
 x11   = { version = "2", features = ["xlib", "glx"] }
 glium = { version = "0.15", default-features = false }
 image = "0.10"
-
-json = "0.7"

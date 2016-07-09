@@ -33,11 +33,11 @@ pub trait Saver {
 	/// Resize the viewport.
 	fn resize(&mut self, context: Rc<gl::backend::Context>) { }
 
-	/// The password is being interacted with.
-	fn password(&mut self, value: Password) { }
-
 	/// The pointer moved or clicked.
 	fn pointer(&mut self, value: Pointer) { }
+
+	/// The password is being interacted with.
+	fn password(&mut self, value: Password) { }
 
 	/// The saver has been started, useful to implement a fade in or animation to
 	/// only show at the beginning.

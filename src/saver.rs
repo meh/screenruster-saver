@@ -21,9 +21,6 @@ use {State, Password, Pointer};
 
 #[allow(unused_variables)]
 pub trait Saver {
-	/// The update step for the render loop.
-	fn step() -> f64 { 0.015 }
-
 	/// Initialize configuration.
 	fn config(&mut self, config: json::JsonValue) { }
 
@@ -32,6 +29,9 @@ pub trait Saver {
 
 	/// Resize the viewport.
 	fn resize(&mut self, context: Rc<gl::backend::Context>) { }
+
+	/// Whether to try and reduce power usage or not.
+	fn throttle(&mut self, value: bool) { }
 
 	/// The pointer moved or clicked.
 	fn pointer(&mut self, value: Pointer) { }
@@ -50,7 +50,7 @@ pub trait Saver {
 	/// Return the current saver state.
 	fn state(&self) -> State;
 
-	/// Called each `step` milliseconds.
+	/// Called every 15 milliseconds.
 	fn update(&mut self) { }
 
 	/// Render the saver.

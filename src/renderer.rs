@@ -12,7 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.use std::io::{Read, BufRead, BufReader, Write};
 
-use std::time::Instant;
+use std::time::{Instant, Duration};
 use std::thread;
 use std::sync::mpsc::{Receiver, Sender, SendError, channel};
 
@@ -34,6 +34,9 @@ pub enum Request {
 		width:  u32,
 		height: u32,
 	},
+
+	/// Throttle the rendering.
+	Throttle(bool),
 
 	/// The pointer has generated events.
 	Pointer(Pointer),
@@ -60,13 +63,17 @@ pub enum Response {
 	Stopped,
 }
 
+const STEP: u64 = 15_000;
+
 impl Renderer {
 	pub fn new<S: Saver + Send + 'static>(display: String, screen: i32, window: u64, mut saver: S) -> Renderer {
 		let (sender, i_receiver) = channel();
 		let (i_sender, receiver) = channel();
 
 		thread::spawn(move || {
-			let mut display = Display::open(display, screen, window).unwrap();
+			let mut display  = Display::open(display, screen, window).unwrap();
+			let mut throttle = false;
+			let mut skip     = false;
 
 			let texture = {
 				let image = display.screenshot();
@@ -81,15 +88,24 @@ impl Renderer {
 			sender.send(Response::Initialized).unwrap();
 
 			while let Ok(message) = receiver.recv() {
-				if let Request::Start = message {
-					break;
+				match message {
+					Request::Start => {
+						break;
+					}
+
+					Request::Throttle(value) => {
+						throttle = value;
+					}
+
+					event => {
+						warn!("unexpected event before start: {:?}", event);
+					}
 				}
 			}
 
 			saver.begin();
 			sender.send(Response::Started).unwrap();
 
-			let     step     = (S::step() * 1_000_000.0).round() as u64;
 			let mut lag      = 0;
 			let mut previous = Instant::now();
 
@@ -101,21 +117,27 @@ impl Renderer {
 				lag      += elapsed.as_nanosecs();
 
 				// Update the state.
-				while lag >= step {
+				while lag >= STEP {
 					saver.update();
 
 					if saver.state() == State::None {
 						break 'render;
 					}
 
-					lag -= step;
+					lag -= STEP;
 				}
 
 				// Check if we received any requests.
 				if let Ok(event) = receiver.try_recv() {
 					match event {
-						Request::Stop => {
-							saver.end();
+						Request::Throttle(value) => {
+							saver.throttle(value);
+							throttle = value;
+						}
+
+						Request::Resize { width, height } => {
+							display.resize(width, height);
+							saver.resize(display.context());
 						}
 
 						Request::Pointer(pointer) => {
@@ -126,12 +148,23 @@ impl Renderer {
 							saver.password(password);
 						}
 
-						Request::Resize { width, height } => {
-							display.resize(width, height);
-							saver.resize(display.context());
+						Request::Stop => {
+							saver.end();
 						}
 
 						_ => ()
+					}
+				}
+
+				if throttle {
+					if skip {
+						skip = false;
+
+						thread::sleep(Duration::from_millis(16));
+						continue;
+					}
+					else {
+						skip = true;
 					}
 				}
 
@@ -139,6 +172,10 @@ impl Renderer {
 				target.clear_all((0.0, 0.0, 0.0, 1.0), 1.0, 0);
 				saver.render(&mut target, &texture);
 				target.finish().unwrap();
+
+				if now.elapsed().as_nanosecs() < 16_666_666 {
+					thread::sleep(Duration::new(0, 16_000_000 - now.elapsed().as_nanosecs() as u32));
+				}
 			}
 
 			sender.send(Response::Stopped).unwrap();
@@ -168,6 +205,10 @@ impl Renderer {
 
 	pub fn stop(&self) -> Result<(), SendError<Request>> {
 		self.sender.send(Request::Stop)
+	}
+
+	pub fn throttle(&self, value: bool) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Throttle(value))
 	}
 }
 

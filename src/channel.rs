@@ -37,6 +37,9 @@ pub enum Request {
 		window:  u64,
 	},
 
+	/// Throttle the rendering.
+	Throttle(bool),
+
 	/// Resize the viewport.
 	Resize {
 		width: u32,
@@ -92,6 +95,10 @@ impl Channel {
 								screen:  json!(message["screen"].as_i32()),
 								window:  json!(message["window"].as_u64()),
 							}
+						}
+
+						"throttle" => {
+							Request::Throttle(json!(message["throttle"].as_bool()))
 						}
 
 						"resize" => {

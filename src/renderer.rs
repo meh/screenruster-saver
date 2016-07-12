@@ -35,6 +35,9 @@ pub enum Request {
 		height: u32,
 	},
 
+	/// Pause the rendering on blank.
+	Blank(bool),
+
 	/// Throttle the rendering.
 	Throttle(bool),
 
@@ -72,9 +75,11 @@ impl Renderer {
 
 		thread::spawn(move || {
 			let mut display  = Display::open(display, screen, window).unwrap();
+			let mut blank    = false;
 			let mut throttle = false;
 			let mut skip     = false;
 
+			// Put the current screen in a texture.
 			let texture = {
 				let image = display.screenshot();
 				let size  = image.dimensions();
@@ -84,9 +89,11 @@ impl Renderer {
 				gl::texture::Texture2d::new(&display.context(), image).unwrap()
 			};
 
+			// Initialize the saver.
 			saver.initialize(display.context());
 			sender.send(Response::Initialized).unwrap();
 
+			// Handle some initial settings before starting.
 			while let Ok(message) = receiver.recv() {
 				match message {
 					Request::Start => {
@@ -97,12 +104,17 @@ impl Renderer {
 						throttle = value;
 					}
 
+					Request::Blank(value) => {
+						blank = value;
+					}
+
 					event => {
 						warn!("unexpected event before start: {:?}", event);
 					}
 				}
 			}
 
+			// Start the saver.
 			saver.begin();
 			sender.send(Response::Started).unwrap();
 
@@ -113,10 +125,11 @@ impl Renderer {
 				let now     = Instant::now();
 				let elapsed = now.duration_since(previous);
 
+				// Calculate accumulated lag.
 				previous  = now;
 				lag      += elapsed.as_nanosecs();
 
-				// Update the state.
+				// Update the state by 15ms steps.
 				while lag >= STEP {
 					saver.update();
 
@@ -127,12 +140,17 @@ impl Renderer {
 					lag -= STEP;
 				}
 
-				// Check if we received any requests.
-				if let Ok(event) = receiver.try_recv() {
+				// Handle requests.
+				while let Ok(event) = receiver.try_recv() {
 					match event {
 						Request::Throttle(value) => {
 							saver.throttle(value);
 							throttle = value;
+						}
+
+						Request::Blank(value) => {
+							saver.blank(value);
+							blank = value;
 						}
 
 						Request::Resize { width, height } => {
@@ -156,6 +174,7 @@ impl Renderer {
 					}
 				}
 
+				// While throttling we skip every other frame, so it stays at 30 FPS.
 				if throttle {
 					if skip {
 						skip = false;
@@ -168,13 +187,20 @@ impl Renderer {
 					}
 				}
 
-				let mut target = display.draw();
-				target.clear_all((0.0, 0.0, 0.0, 1.0), 1.0, 0);
-				saver.render(&mut target, &texture);
-				target.finish().unwrap();
+				// Record the time spent rendering.
+				let time = Instant::now();
 
-				if now.elapsed().as_nanosecs() < 16_666_666 {
-					thread::sleep(Duration::new(0, 16_000_000 - now.elapsed().as_nanosecs() as u32));
+				// Do not waste time rendering when the screen is blanked.
+				if !blank {
+					let mut target = display.draw();
+					target.clear_all((0.0, 0.0, 0.0, 1.0), 1.0, 0);
+					saver.render(&mut target, &texture);
+					target.finish().unwrap();
+				}
+
+				// If the rendering was too fast, throttle it at 60 FPS.
+				if time.elapsed().as_nanosecs() < 16_666_666 {
+					thread::sleep(Duration::new(0, 16_000_000 - time.elapsed().as_nanosecs() as u32));
 				}
 			}
 
@@ -185,6 +211,14 @@ impl Renderer {
 			receiver: i_receiver,
 			sender:   i_sender,
 		}
+	}
+
+	pub fn throttle(&self, value: bool) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Throttle(value))
+	}
+
+	pub fn blank(&self, value: bool) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Blank(value))
 	}
 
 	pub fn resize(&self, width: u32, height: u32) -> Result<(), SendError<Request>> {
@@ -205,10 +239,6 @@ impl Renderer {
 
 	pub fn stop(&self) -> Result<(), SendError<Request>> {
 		self.sender.send(Request::Stop)
-	}
-
-	pub fn throttle(&self, value: bool) -> Result<(), SendError<Request>> {
-		self.sender.send(Request::Throttle(value))
 	}
 }
 

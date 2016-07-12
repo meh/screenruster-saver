@@ -40,6 +40,9 @@ pub enum Request {
 	/// Throttle the rendering.
 	Throttle(bool),
 
+	/// The screen has been blanked or unblanked.
+	Blank(bool),
+
 	/// Resize the viewport.
 	Resize {
 		width: u32,
@@ -99,6 +102,10 @@ impl Channel {
 
 						"throttle" => {
 							Request::Throttle(json!(message["throttle"].as_bool()))
+						}
+
+						"blank" => {
+							Request::Blank(json!(message["blank"].as_bool()))
 						}
 
 						"resize" => {

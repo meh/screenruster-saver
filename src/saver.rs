@@ -33,6 +33,9 @@ pub trait Saver {
 	/// Whether to try and reduce power usage or not.
 	fn throttle(&mut self, value: bool) { }
 
+	/// Whether the screen has been blanked or unblanked.
+	fn blank(&mut self, value: bool) { }
+
 	/// The pointer moved or clicked.
 	fn pointer(&mut self, value: Pointer) { }
 

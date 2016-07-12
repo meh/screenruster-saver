@@ -116,6 +116,10 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
 						renderer.throttle(value).unwrap();
 					}
 
+					channel::Request::Blank(value) => {
+						renderer.blank(value).unwrap();
+					}
+
 					channel::Request::Resize { width, height } => {
 						renderer.resize(width, height).unwrap();
 					}

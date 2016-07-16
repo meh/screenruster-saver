@@ -43,10 +43,10 @@ pub trait DurationExt {
 
 impl DurationExt for Duration {
 	fn as_msecs(&self) -> u64 {
-		self.as_secs() * 1_000 + (self.subsec_nanos() as f32 / 1_000_000.0).round() as u64
+		self.as_secs() * 1_000 + (self.subsec_nanos() / 1_000_000) as u64
 	}
 
 	fn as_nanosecs(&self) -> u64 {
-		self.as_secs() * 1_000_000 + self.subsec_nanos() as u64
+		self.as_secs() * 1_000_000_000 + self.subsec_nanos() as u64
 	}
 }

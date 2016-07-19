@@ -67,7 +67,8 @@ pub use display::Display;
 use std::io;
 use std::env;
 
-pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
+/// Initialize the saver.
+pub fn init() -> Result<Channel> {
 	// Initialize logger.
 	{
 		let mut builder = env_logger::LogBuilder::new();
@@ -78,13 +79,18 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> error::Result<()> {
 		});
 
 		if env::var("RUST_LOG").is_ok() {
-			builder.parse(&env::var("RUST_LOG").unwrap());
+			builder.parse(env::var("RUST_LOG")?.as_ref());
 		}
 
-		builder.init().unwrap()
+		builder.init()?;
 	}
 
-	let channel = Channel::new(io::stdin(), io::stdout());
+	Channel::open(io::stdin(), io::stdout())
+}
+
+/// Run the saver.
+pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
+	let channel = init()?;
 
 	if let Ok(Request::Config(config)) = channel.recv() {
 		saver.config(config);

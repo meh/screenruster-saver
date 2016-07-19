@@ -15,8 +15,10 @@
 use std::fmt;
 use std::error;
 use std::io;
+use std::env;
 
 use gl;
+use log;
 
 pub type Result<T> = ::std::result::Result<T, Error>;
 
@@ -25,6 +27,8 @@ pub enum Error {
 	Io(io::Error),
 	ContextCreation(gl::GliumCreationError<Display>),
 	SwapBuffers(gl::SwapBuffersError),
+	Env(env::VarError),
+	Logger(log::SetLoggerError),
 	Protocol,
 }
 
@@ -38,6 +42,18 @@ pub enum Display {
 impl From<io::Error> for Error {
 	fn from(value: io::Error) -> Self {
 		Error::Io(value)
+	}
+}
+
+impl From<env::VarError> for Error {
+	fn from(value: env::VarError) -> Self {
+		Error::Env(value)
+	}
+}
+
+impl From<log::SetLoggerError> for Error {
+	fn from(value: log::SetLoggerError) -> Self {
+		Error::Logger(value)
 	}
 }
 
@@ -75,6 +91,12 @@ impl error::Error for Error {
 				"OpenGL error.",
 
 			Error::SwapBuffers(ref err) =>
+				err.description(),
+
+			Error::Env(ref err) =>
+				err.description(),
+
+			Error::Logger(ref err) =>
 				err.description(),
 
 			Error::Protocol =>

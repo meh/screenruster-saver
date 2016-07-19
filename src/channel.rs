@@ -18,6 +18,7 @@ use std::sync::mpsc::{Receiver, RecvError, Sender, SendError, channel};
 
 use json::{self, JsonValue};
 
+use error;
 use {Password, Pointer};
 
 pub struct Channel {
@@ -75,7 +76,7 @@ pub enum Response {
 }
 
 impl Channel {
-	pub fn new<R: Read + Send + 'static, W: Write + Send + 'static>(input: R, output: W) -> Channel {
+	pub fn open<R: Read + Send + 'static, W: Write + Send + 'static>(input: R, output: W) -> error::Result<Channel> {
 		let (sender, i_receiver) = channel();
 		let (i_sender, receiver) = channel();
 
@@ -188,10 +189,10 @@ impl Channel {
 			}
 		});
 
-		Channel {
+		Ok(Channel {
 			receiver: i_receiver,
 			sender:   i_sender,
-		}
+		})
 	}
 
 	pub fn recv(&self) -> Result<Request, RecvError> {

@@ -50,6 +50,9 @@ pub enum Request {
 	/// Start the rendering.
 	Start,
 
+	/// The screen has been locked.
+	Lock,
+
 	/// Stop the rendering.
 	Stop,
 }
@@ -166,6 +169,10 @@ impl Renderer {
 							saver.password(password);
 						}
 
+						Request::Lock => {
+							saver.lock();
+						}
+
 						Request::Stop => {
 							saver.end();
 						}
@@ -232,6 +239,10 @@ impl Renderer {
 
 	pub fn start(&self) -> Result<(), SendError<Request>> {
 		self.sender.send(Request::Start)
+	}
+
+	pub fn lock(&self) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Lock)
 	}
 
 	pub fn stop(&self) -> Result<(), SendError<Request>> {

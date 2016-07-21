@@ -59,6 +59,9 @@ pub enum Request {
 	/// Start the saver.
 	Start,
 
+	/// Lock the saver.
+	Lock,
+
 	/// Stop the saver.
 	Stop,
 }
@@ -153,6 +156,10 @@ impl Channel {
 
 						"start" => {
 							Request::Start
+						}
+
+						"lock" => {
+							Request::Lock
 						}
 
 						"stop" => {

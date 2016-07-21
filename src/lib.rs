@@ -142,6 +142,10 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 						renderer.password(password).unwrap();
 					}
 
+					channel::Request::Lock => {
+						renderer.lock().unwrap();
+					}
+
 					channel::Request::Stop => {
 						renderer.stop().unwrap();
 					}

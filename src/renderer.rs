@@ -118,7 +118,7 @@ impl Renderer {
 			}
 
 			// Start the saver.
-			saver.begin();
+			saver.start();
 			sender.send(Response::Started).unwrap();
 
 			let mut lag      = 0;
@@ -174,7 +174,7 @@ impl Renderer {
 						}
 
 						Request::Stop => {
-							saver.end();
+							saver.stop();
 						}
 
 						_ => ()

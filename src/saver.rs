@@ -44,14 +44,14 @@ pub trait Saver {
 
 	/// The saver has been started, useful to implement a fade in or animation to
 	/// only show at the beginning.
-	fn begin(&mut self);
+	fn start(&mut self);
 
 	/// The screen has been locked.
 	fn lock(&mut self) { }
 
 	/// The saver has been stopped, useful to implement a fade out or animation
 	/// to show at the end.
-	fn end(&mut self);
+	fn stop(&mut self);
 
 	/// Return the current saver state.
 	fn state(&self) -> State;

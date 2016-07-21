@@ -66,7 +66,7 @@ pub enum Response {
 	Stopped,
 }
 
-const STEP: u64 = 15_000;
+const STEP: u64 = 15_000_000;
 
 impl Renderer {
 	pub fn new<S: Saver + Send + 'static>(display: String, screen: i32, window: u64, mut saver: S) -> Renderer {
@@ -187,9 +187,6 @@ impl Renderer {
 					}
 				}
 
-				// Record the time spent rendering.
-				let time = Instant::now();
-
 				// Do not waste time rendering when the screen is blanked.
 				if !blank {
 					let mut target = display.draw();
@@ -199,8 +196,8 @@ impl Renderer {
 				}
 
 				// If the rendering was too fast, throttle it at 60 FPS.
-				if time.elapsed().as_nanosecs() < 16_666_666 {
-					thread::sleep(Duration::new(0, 16_000_000 - time.elapsed().as_nanosecs() as u32));
+				if now.elapsed().as_nanosecs() < 16_000_000 {
+					thread::sleep(Duration::new(0, 16_000_000 - now.elapsed().as_nanosecs() as u32));
 				}
 			}
 

@@ -17,7 +17,7 @@ use std::ffi::CString;
 use std::rc::Rc;
 use std::cell::Cell;
 
-use libc::{c_int, c_uint};
+use libc::c_int;
 use std::os::raw::c_void;
 use x11::{xlib, glx};
 use gl;
@@ -35,10 +35,10 @@ pub struct Backend {
 	display: *mut xlib::Display,
 	root:    xlib::Window,
 	context: glx::GLXContext,
-	window:  xlib::Window,
+	id:      xlib::Window,
 
-	width:  Cell<u32>,
-	height: Cell<u32>,
+	screen: Cell<(u32, u32)>,
+	window: Cell<(u32, u32)>,
 }
 
 impl Display {
@@ -48,8 +48,6 @@ impl Display {
 			let name    = CString::new(name.as_ref().as_bytes()).unwrap();
 			let display = xlib::XOpenDisplay(name.as_ptr()).as_mut().ok_or(error::Display::NotFound)?;
 			let root    = xlib::XRootWindow(display, screen);
-			let width   = xlib::XDisplayWidth(display, screen) as c_uint;
-			let height  = xlib::XDisplayHeight(display, screen) as c_uint;
 
 			let info = glx::glXChooseVisual(display, screen,
 				[glx::GLX_RGBA, glx::GLX_DEPTH_SIZE, 24, glx::GLX_DOUBLEBUFFER, 0].as_ptr() as *mut _)
@@ -62,10 +60,28 @@ impl Display {
 				display: display,
 				root:    root,
 				context: context,
-				window:  id,
+				id:      id,
 
-				width:  Cell::new(width),
-				height: Cell::new(height),
+				screen: Cell::new({
+					let width  = xlib::XDisplayWidth(display, screen);
+					let height = xlib::XDisplayHeight(display, screen);
+
+					(width as u32, height as u32)
+				}),
+
+				window: Cell::new({
+					let mut root   = 0;
+					let mut x      = 0;
+					let mut y      = 0;
+					let mut width  = 0;
+					let mut height = 0;
+					let mut border = 0;
+					let mut depth  = 0;
+
+					xlib::XGetGeometry(display, id, &mut root, &mut x, &mut y, &mut width, &mut height, &mut border, &mut depth);
+
+					(width as u32, height as u32)
+				})
 			});
 
 			Ok(Display {
@@ -87,14 +103,12 @@ impl Display {
 
 	/// Resize the Display.
 	pub fn resize(&mut self, width: u32, height: u32) {
-		self.backend.width.set(width);
-		self.backend.height.set(height);
+		self.backend.window.set((width, height));
 	}
 
 	/// Take a screenshot.
 	pub fn screenshot(&self) -> image::DynamicImage {
-		let width  = self.backend.width.get();
-		let height = self.backend.height.get();
+		let (width, height)  = self.backend.screen.get();
 
 		unsafe {
 			let ximage = xlib::XGetImage(self.backend.display, self.backend.root,
@@ -125,7 +139,7 @@ impl Display {
 unsafe impl gl::backend::Backend for Backend {
 	fn swap_buffers(&self) -> Result<(), gl::SwapBuffersError> {
 		unsafe {
-			glx::glXSwapBuffers(self.display, self.window);
+			glx::glXSwapBuffers(self.display, self.id);
 		}
 
 		Ok(())
@@ -143,7 +157,7 @@ unsafe impl gl::backend::Backend for Backend {
 	}
 
 	fn get_framebuffer_dimensions(&self) -> (u32, u32) {
-		(self.width.get(), self.height.get())
+		self.window.get()
 	}
 
 	fn is_current(&self) -> bool {
@@ -151,7 +165,7 @@ unsafe impl gl::backend::Backend for Backend {
 	}
 
 	unsafe fn make_current(&self) {
-		glx::glXMakeCurrent(self.display, self.window, self.context);
+		glx::glXMakeCurrent(self.display, self.id, self.context);
 	}
 }
 

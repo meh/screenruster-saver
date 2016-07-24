@@ -14,8 +14,12 @@ log        = "0.3"
 env_logger = "0.3"
 
 json = "0.7"
+libc = "0.2"
 
-libc  = "0.2"
-x11   = { version = "2", features = ["xlib", "glx"] }
-glium = { version = "0.15", default-features = false }
-image = "0.10"
+x11   = { optional = true, version = "2", features = ["xlib", "glx"] }
+glium = { optional = true, version = "0.15", default-features = false }
+image = { optional = true, version = "0.10" }
+
+[features]
+default  = ["renderer"]
+renderer = ["x11", "glium", "image"]

@@ -17,6 +17,7 @@ use std::error;
 use std::io;
 use std::env;
 
+#[cfg(feature = "renderer")]
 use gl;
 use log;
 
@@ -25,13 +26,16 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
 	Io(io::Error),
+	#[cfg(feature = "renderer")]
 	ContextCreation(gl::GliumCreationError<Display>),
+	#[cfg(feature = "renderer")]
 	SwapBuffers(gl::SwapBuffersError),
 	Env(env::VarError),
 	Logger(log::SetLoggerError),
 	Protocol,
 }
 
+#[cfg(feature = "renderer")]
 #[derive(Debug)]
 pub enum Display {
 	NotFound,
@@ -57,18 +61,21 @@ impl From<log::SetLoggerError> for Error {
 	}
 }
 
+#[cfg(feature = "renderer")]
 impl From<Display> for Error {
 	fn from(value: Display) -> Self {
 		Error::ContextCreation(gl::GliumCreationError::BackendCreationError(value))
 	}
 }
 
+#[cfg(feature = "renderer")]
 impl From<gl::GliumCreationError<Display>> for Error {
 	fn from(value: gl::GliumCreationError<Display>) -> Self {
 		Error::ContextCreation(value)
 	}
 }
 
+#[cfg(feature = "renderer")]
 impl From<gl::SwapBuffersError> for Error {
 	fn from(value: gl::SwapBuffersError) -> Self {
 		Error::SwapBuffers(value)
@@ -87,9 +94,11 @@ impl error::Error for Error {
 			Error::Io(ref err) =>
 				err.description(),
 
+			#[cfg(feature = "renderer")]
 			Error::ContextCreation(..) =>
 				"OpenGL error.",
 
+			#[cfg(feature = "renderer")]
 			Error::SwapBuffers(ref err) =>
 				err.description(),
 

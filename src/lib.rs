@@ -12,10 +12,8 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.use std::io::{Read, BufRead, BufReader, Write};
 
-#![feature(mpsc_select, macro_reexport, type_ascription, question_mark)]
-
-extern crate libc;
-extern crate x11;
+#![feature(macro_reexport, type_ascription, question_mark)]
+#![cfg_attr(feature = "renderer", feature(mpsc_select))]
 
 #[macro_use]
 #[macro_reexport(debug, error, info, log, log_enabled, trace, warn)]
@@ -24,18 +22,26 @@ pub extern crate log;
 pub use log::{LogLocation, LogLevel, __static_max_level, max_log_level, __log, __enabled};
 extern crate env_logger;
 
-#[macro_reexport(implement_vertex, program, uniform)]
-pub extern crate glium as gl;
-#[doc(hidden)]
-pub use gl::{program, Version, Api, vertex, backend, uniforms};
-
-pub extern crate image;
-
 #[macro_use]
 #[macro_reexport(object, array)]
 pub extern crate json;
 #[doc(hidden)]
 pub use json::{JsonValue};
+
+extern crate libc;
+
+#[cfg(feature = "renderer")]
+extern crate x11;
+
+#[cfg_attr(feature = "renderer", macro_reexport(implement_vertex, program, uniform))]
+#[cfg(feature = "renderer")]
+pub extern crate glium as gl;
+#[cfg_attr(feature = "renderer", doc(hidden))]
+#[cfg(feature = "renderer")]
+pub use gl::{program, Version, Api, vertex, backend, uniforms};
+
+#[cfg(feature = "renderer")]
+pub extern crate image;
 
 #[macro_use]
 mod util;
@@ -52,16 +58,22 @@ pub use password::Password;
 pub mod pointer;
 pub use pointer::Pointer;
 
-mod saver;
-pub use saver::Saver;
-
 mod channel;
 pub use channel::{Request, Response, Channel};
 
+#[cfg(feature = "renderer")]
+mod saver;
+#[cfg(feature = "renderer")]
+pub use saver::Saver;
+
+#[cfg(feature = "renderer")]
 mod renderer;
+#[cfg(feature = "renderer")]
 pub use renderer::Renderer;
 
+#[cfg(feature = "renderer")]
 mod display;
+#[cfg(feature = "renderer")]
 pub use display::Display;
 
 use std::io;
@@ -89,6 +101,7 @@ pub fn init() -> Result<Channel> {
 }
 
 /// Run the saver.
+#[cfg(feature = "renderer")]
 pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 	let channel = init()?;
 

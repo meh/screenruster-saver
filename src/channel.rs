@@ -85,6 +85,17 @@ impl Channel {
 
 		// Reader.
 		thread::spawn(move || {
+			macro_rules! json {
+				($body:expr) => (
+					if let Some(value) = $body {
+						value
+					}
+					else {
+						continue;
+					}
+				);
+			}
+
 			for line in BufReader::new(input).lines() {
 				if line.is_err() {
 					break;

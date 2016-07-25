@@ -103,6 +103,17 @@ pub fn init() -> Result<Channel> {
 /// Run the saver.
 #[cfg(feature = "renderer")]
 pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
+	macro_rules! exit {
+		($body:expr) => (
+			if let Ok(value) = $body {
+				value
+			}
+			else {
+				break;
+			}
+		);
+	}
+
 	let channel = init()?;
 
 	if let Ok(Request::Config(config)) = channel.recv() {

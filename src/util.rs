@@ -14,28 +14,6 @@
 
 use std::time::Duration;
 
-macro_rules! json {
-	($body:expr) => (
-		if let Some(value) = $body {
-			value
-		}
-		else {
-			continue;
-		}
-	);
-}
-
-macro_rules! exit {
-	($body:expr) => (
-		if let Ok(value) = $body {
-			value
-		}
-		else {
-			break;
-		}
-	);
-}
-
 pub trait DurationExt {
 	fn as_msecs(&self) -> u64;
 	fn as_nanosecs(&self) -> u64;

@@ -10,7 +10,7 @@
 //            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
 //   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 //
-//  0. You just DO WHAT THE FUCK YOU WANT TO.use std::io::{Read, BufRead, BufReader, Write};
+//  0. You just DO WHAT THE FUCK YOU WANT TO.
 
 use std::time::{Instant, Duration};
 use std::thread;

@@ -19,8 +19,9 @@ use std::sync::mpsc::{Receiver, RecvError, Sender, SendError, channel};
 use json::{self, JsonValue};
 
 use error;
-use {Password, Pointer};
+use {Safety, Password, Pointer};
 
+/// Communication between locker and saver.
 pub struct Channel {
 	receiver: Receiver<Request>,
 	sender:   Sender<Response>,
@@ -38,17 +39,20 @@ pub enum Request {
 		window:  u64,
 	},
 
+	/// Resize the viewport.
+	Resize {
+		width: u32,
+		height: u32,
+	},
+
 	/// Throttle the rendering.
 	Throttle(bool),
 
 	/// The screen has been blanked or unblanked.
 	Blank(bool),
 
-	/// Resize the viewport.
-	Resize {
-		width: u32,
-		height: u32,
-	},
+	/// The locker safety level.
+	Safety(Safety),
 
 	/// Pointer events.
 	Pointer(Pointer),
@@ -79,6 +83,7 @@ pub enum Response {
 }
 
 impl Channel {
+	/// Open the channel on the given input and output streams.
 	pub fn open<R: Read + Send + 'static, W: Write + Send + 'static>(input: R, output: W) -> error::Result<Channel> {
 		let (sender, i_receiver) = channel();
 		let (i_sender, receiver) = channel();
@@ -115,6 +120,13 @@ impl Channel {
 							}
 						}
 
+						"resize" => {
+							Request::Resize {
+								width:  json!(message["width"].as_u32()),
+								height: json!(message["height"].as_u32()),
+							}
+						}
+
 						"throttle" => {
 							Request::Throttle(json!(message["throttle"].as_bool()))
 						}
@@ -123,11 +135,15 @@ impl Channel {
 							Request::Blank(json!(message["blank"].as_bool()))
 						}
 
-						"resize" => {
-							Request::Resize {
-								width:  json!(message["width"].as_u32()),
-								height: json!(message["height"].as_u32()),
-							}
+						"safety" => {
+							Request::Safety(match json!(message["safety"].as_str()) {
+								"high"   => Safety::High,
+								"medium" => Safety::Medium,
+								"low"    => Safety::Low,
+
+								_ =>
+									continue
+							})
 						}
 
 						"pointer" => {
@@ -213,10 +229,12 @@ impl Channel {
 		})
 	}
 
+	/// Receive a message from the locker.
 	pub fn recv(&self) -> Result<Request, RecvError> {
 		self.receiver.recv()
 	}
 
+	/// Send a message to the locker.
 	pub fn send(&self, response: Response) -> Result<(), SendError<Response>> {
 		self.sender.send(response)
 	}

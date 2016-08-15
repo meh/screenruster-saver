@@ -19,7 +19,7 @@ use std::sync::mpsc::{Receiver, Sender, SendError, channel};
 use gl::{self, Surface};
 use image::GenericImage;
 
-use {Display, Saver, State, Password, Pointer};
+use {Display, Saver, State, Safety, Password, Pointer};
 use util::DurationExt;
 
 pub struct Renderer {
@@ -35,11 +35,14 @@ pub enum Request {
 		height: u32,
 	},
 
+	/// Throttle the rendering.
+	Throttle(bool),
+
 	/// Pause the rendering on blank.
 	Blank(bool),
 
-	/// Throttle the rendering.
-	Throttle(bool),
+	/// Change the safety level.
+	Safety(Safety),
 
 	/// The pointer has generated events.
 	Pointer(Pointer),
@@ -111,6 +114,14 @@ impl Renderer {
 						blank = value;
 					}
 
+					Request::Safety(level) => {
+						saver.safety(level);
+					}
+
+					Request::Lock => {
+						saver.lock();
+					}
+
 					event => {
 						warn!("unexpected event before start: {:?}", event);
 					}
@@ -146,6 +157,11 @@ impl Renderer {
 				// Handle requests.
 				while let Ok(event) = receiver.try_recv() {
 					match event {
+						Request::Resize { width, height } => {
+							display.resize(width, height);
+							saver.resize(display.context());
+						}
+
 						Request::Throttle(value) => {
 							saver.throttle(value);
 							throttle = value;
@@ -156,9 +172,8 @@ impl Renderer {
 							blank = value;
 						}
 
-						Request::Resize { width, height } => {
-							display.resize(width, height);
-							saver.resize(display.context());
+						Request::Safety(level) => {
+							saver.safety(level)
 						}
 
 						Request::Pointer(pointer) => {
@@ -217,6 +232,10 @@ impl Renderer {
 		}
 	}
 
+	pub fn resize(&self, width: u32, height: u32) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Resize { width: width, height: height })
+	}
+
 	pub fn throttle(&self, value: bool) -> Result<(), SendError<Request>> {
 		self.sender.send(Request::Throttle(value))
 	}
@@ -225,8 +244,8 @@ impl Renderer {
 		self.sender.send(Request::Blank(value))
 	}
 
-	pub fn resize(&self, width: u32, height: u32) -> Result<(), SendError<Request>> {
-		self.sender.send(Request::Resize { width: width, height: height })
+	pub fn safety(&self, value: Safety) -> Result<(), SendError<Request>> {
+		self.sender.send(Request::Safety(value))
 	}
 
 	pub fn pointer(&self, pointer: Pointer) -> Result<(), SendError<Request>> {

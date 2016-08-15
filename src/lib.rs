@@ -52,6 +52,9 @@ pub use error::{Result, Error};
 mod state;
 pub use state::State;
 
+mod safety;
+pub use safety::Safety;
+
 mod password;
 pub use password::Password;
 
@@ -142,6 +145,10 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 						unreachable!();
 					}
 
+					channel::Request::Resize { width, height } => {
+						renderer.resize(width, height).unwrap();
+					}
+
 					channel::Request::Throttle(value) => {
 						renderer.throttle(value).unwrap();
 					}
@@ -150,12 +157,8 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 						renderer.blank(value).unwrap();
 					}
 
-					channel::Request::Resize { width, height } => {
-						renderer.resize(width, height).unwrap();
-					}
-
-					channel::Request::Start => {
-						renderer.start().unwrap();
+					channel::Request::Safety(value) => {
+						renderer.safety(value).unwrap();
 					}
 
 					channel::Request::Pointer(pointer) => {
@@ -164,6 +167,10 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 
 					channel::Request::Password(password) => {
 						renderer.password(password).unwrap();
+					}
+
+					channel::Request::Start => {
+						renderer.start().unwrap();
 					}
 
 					channel::Request::Lock => {

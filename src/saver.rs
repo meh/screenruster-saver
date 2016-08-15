@@ -17,7 +17,7 @@ use std::rc::Rc;
 use gl;
 use json;
 
-use {State, Password, Pointer};
+use {State, Safety, Password, Pointer};
 
 #[allow(unused_variables)]
 pub trait Saver {
@@ -35,6 +35,9 @@ pub trait Saver {
 
 	/// Whether the screen has been blanked or unblanked.
 	fn blank(&mut self, value: bool) { }
+
+	/// Whether the screen is actually safe.
+	fn safety(&mut self, value: Safety) { }
 
 	/// The pointer moved or clicked.
 	fn pointer(&mut self, value: Pointer) { }

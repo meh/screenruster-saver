@@ -12,7 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-#![feature(macro_reexport, type_ascription, question_mark)]
+#![feature(macro_reexport, type_ascription)]
 #![cfg_attr(feature = "renderer", feature(mpsc_select))]
 
 #[macro_use]

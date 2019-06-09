@@ -14,12 +14,12 @@
 
 use std::io::{Read, BufRead, BufReader, Write};
 use std::thread;
-use std::sync::mpsc::{Receiver, RecvError, Sender, SendError, channel};
 
-use json::{self, JsonValue};
+use json::{self, JsonValue, object};
+use crossbeam_channel::{unbounded, Receiver, RecvError, Sender, SendError};
 
-use error;
-use {Safety, Password, Pointer};
+use crate::error;
+use crate::{Safety, Password, Pointer};
 
 /// Communication between locker and saver.
 pub struct Channel {
@@ -85,8 +85,8 @@ pub enum Response {
 impl Channel {
 	/// Open the channel on the given input and output streams.
 	pub fn open<R: Read + Send + 'static, W: Write + Send + 'static>(input: R, output: W) -> error::Result<Channel> {
-		let (sender, i_receiver) = channel();
-		let (i_sender, receiver) = channel();
+		let (sender, i_receiver) = unbounded();
+		let (i_sender, receiver) = unbounded();
 
 		// Reader.
 		thread::spawn(move || {

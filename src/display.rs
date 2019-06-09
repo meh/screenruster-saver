@@ -21,9 +21,9 @@ use libc::c_int;
 use std::os::raw::c_void;
 use x11::{xlib, glx};
 use gl;
-use image;
+use picto;
 
-use error;
+use crate::error;
 
 pub struct Display {
 	context: Rc<gl::backend::Context>,
@@ -107,7 +107,10 @@ impl Display {
 	}
 
 	/// Take a screenshot.
-	pub fn screenshot(&self) -> image::DynamicImage {
+	pub fn screenshot<P, C>(&self) -> picto::Buffer<P, C, Vec<C>>
+		where P: picto::Pixel<C> + picto::pixel::Write<C> + From<picto::color::Rgb>,
+		      C: picto::pixel::Channel
+	{
 		let (width, height)  = self.backend.screen.get();
 
 		unsafe {
@@ -119,19 +122,20 @@ impl Display {
 			let g = (*ximage).green_mask;
 			let b = (*ximage).blue_mask;
 
-			let mut image = image::DynamicImage::new_rgb8(width, height);
+			let mut image = picto::Buffer::<picto::color::Rgb, u8, _>::new(width, height);
 
-			for (x, y, px) in image.as_mut_rgb8().unwrap().enumerate_pixels_mut() {
+			for (x, y, mut px) in image.pixels_mut() {
 				let pixel = xlib::XGetPixel(ximage, x as c_int, y as c_int);
 
-				px[0] = ((pixel & r) >> 16) as u8;
-				px[1] = ((pixel & g) >> 8)  as u8;
-				px[2] = ((pixel & b) >> 0)  as u8;
+				px.set(&picto::color::Rgb::new_u8(
+					((pixel & r) >> 16) as u8,
+					((pixel & g) >> 8)  as u8,
+					((pixel & b) >> 0)  as u8));
 			}
 
 			xlib::XDestroyImage(ximage);
 
-			image
+			image.convert::<P, C>()
 		}
 	}
 }

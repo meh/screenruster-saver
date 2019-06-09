@@ -14,13 +14,14 @@
 
 use std::time::{Instant, Duration};
 use std::thread;
-use std::sync::mpsc::{Receiver, Sender, SendError, channel};
 
+use crossbeam_channel::{unbounded, Receiver, Sender, SendError};
 use gl::{self, Surface};
-use image::GenericImage;
+use picto;
+use log::warn;
 
-use {Display, Saver, State, Safety, Password, Pointer};
-use util::DurationExt;
+use crate::{Display, Saver, State, Safety, Password, Pointer};
+use crate::util::DurationExt;
 
 pub struct Renderer {
 	receiver: Receiver<Response>,
@@ -76,8 +77,8 @@ const STEP: u64 = 15_000_000;
 
 impl Renderer {
 	pub fn new<S: Saver + Send + 'static>(display: String, screen: i32, window: u64, mut saver: S) -> Renderer {
-		let (sender, i_receiver) = channel();
-		let (i_sender, receiver) = channel();
+		let (sender, i_receiver) = unbounded();
+		let (i_sender, receiver) = unbounded();
 
 		thread::spawn(move || {
 			let mut display  = Display::open(display, screen, window).unwrap();
@@ -87,10 +88,10 @@ impl Renderer {
 
 			// Put the current screen in a texture.
 			let texture = {
-				let image = display.screenshot();
+				let image = display.screenshot::<picto::color::Rgba, u8>();
 				let size  = image.dimensions();
 				let image = gl::texture::RawImage2d::from_raw_rgba_reversed(
-					image.to_rgba().into_raw(), size);
+					&image.into_raw(), size);
 
 				gl::texture::Texture2d::new(&display.context(), image).unwrap()
 			};

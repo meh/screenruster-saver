@@ -12,36 +12,16 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-#![feature(macro_reexport, type_ascription)]
-#![cfg_attr(feature = "renderer", feature(mpsc_select))]
+#![feature(type_ascription)]
 
-#[macro_use]
-#[macro_reexport(debug, error, info, log, log_enabled, trace, warn)]
-pub extern crate log;
-#[doc(hidden)]
-pub use log::{LogLocation, LogLevel, __static_max_level, max_log_level, __log, __enabled};
-extern crate env_logger;
-
-#[macro_use]
-#[macro_reexport(object, array)]
-pub extern crate json;
-#[doc(hidden)]
-pub use json::{JsonValue};
-
-extern crate libc;
+use std::io;
+use std::env;
 
 #[cfg(feature = "renderer")]
-extern crate x11;
+pub use gl;
 
-#[cfg_attr(feature = "renderer", macro_reexport(implement_vertex, program, uniform))]
-#[cfg(feature = "renderer")]
-pub extern crate glium as gl;
-#[cfg_attr(feature = "renderer", doc(hidden))]
-#[cfg(feature = "renderer")]
-pub use gl::{program, Version, Api, vertex, backend, uniforms};
-
-#[cfg(feature = "renderer")]
-pub extern crate image;
+pub use log::{debug, error, info, log, log_enabled, trace, warn};
+pub use json::{JsonValue, object, array};
 
 #[macro_use]
 mod util;
@@ -79,25 +59,25 @@ mod display;
 #[cfg(feature = "renderer")]
 pub use display::Display;
 
-use std::io;
-use std::env;
 
 /// Initialize the saver.
 pub fn init() -> Result<Channel> {
+	use std::io::Write;
+
 	// Initialize logger.
 	{
-		let mut builder = env_logger::LogBuilder::new();
+		let mut builder = env_logger::Builder::new();
 		let     pid     = unsafe { libc::getpid() };
 
-		builder.format(move |record| {
-			format!("{}:{}:{}: {}", record.level(), pid, record.location().module_path(), record.args())
+		builder.format(move |buf, record| {
+			writeln!(buf, "{}:{}:{}: {}", record.level(), pid, record.module_path().unwrap_or("unknown"), record.args())
 		});
 
-		if env::var("RUST_LOG").is_ok() {
-			builder.parse(env::var("RUST_LOG")?.as_ref());
+		if let Ok(log) = env::var("RUST_LOG") {
+			builder.parse(&log);
 		}
 
-		builder.init()?;
+		builder.init();
 	}
 
 	Channel::open(io::stdin(), io::stdout())
@@ -117,6 +97,8 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 		);
 	}
 
+	use crossbeam_channel::select;
+
 	let channel = init()?;
 
 	if let Ok(Request::Config(config)) = channel.recv() {
@@ -133,13 +115,9 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 		return Err(Error::Protocol);
 	};
 
-	// select! is icky
-	let c = channel.as_ref();
-	let r = renderer.as_ref();
-
-	loop {
+	'main: loop {
 		select! {
-			message = c.recv() => {
+			recv(channel.as_ref()) -> message => {
 				match exit!(message) {
 					channel::Request::Target { .. } | channel::Request::Config(..) => {
 						unreachable!();
@@ -183,7 +161,7 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 				}
 			},
 
-			message = r.recv() => {
+			recv(renderer.as_ref()) -> message => {
 				match exit!(message) {
 					renderer::Response::Initialized => {
 						channel.send(channel::Response::Initialized).unwrap();
@@ -194,7 +172,7 @@ pub fn run<S: Saver + Send + 'static>(mut saver: S) -> Result<()> {
 					}
 
 					renderer::Response::Stopped => {
-						break;
+						break 'main;
 					}
 				}
 			}

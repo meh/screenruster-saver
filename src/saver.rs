@@ -17,7 +17,7 @@ use std::rc::Rc;
 use gl;
 use json;
 
-use {State, Safety, Password, Pointer};
+use crate::{State, Safety, Password, Pointer};
 
 #[allow(unused_variables)]
 pub trait Saver {

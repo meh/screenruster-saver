@@ -27,7 +27,7 @@ pub type Result<T> = ::std::result::Result<T, Error>;
 pub enum Error {
 	Io(io::Error),
 	#[cfg(feature = "renderer")]
-	ContextCreation(gl::GliumCreationError<Display>),
+	ContextCreation(gl::IncompatibleOpenGl),
 	#[cfg(feature = "renderer")]
 	SwapBuffers(gl::SwapBuffersError),
 	Env(env::VarError),
@@ -64,13 +64,17 @@ impl From<log::SetLoggerError> for Error {
 #[cfg(feature = "renderer")]
 impl From<Display> for Error {
 	fn from(value: Display) -> Self {
-		Error::ContextCreation(gl::GliumCreationError::BackendCreationError(value))
+		Error::ContextCreation(gl::IncompatibleOpenGl(match value {
+			Display::NotFound => "could not open display",
+			Display::Visual => "could not find appropriate visual",
+			Display::Context => "could not create context",
+		}.into()))
 	}
 }
 
 #[cfg(feature = "renderer")]
-impl From<gl::GliumCreationError<Display>> for Error {
-	fn from(value: gl::GliumCreationError<Display>) -> Self {
+impl From<gl::IncompatibleOpenGl> for Error {
+	fn from(value: gl::IncompatibleOpenGl) -> Self {
 		Error::ContextCreation(value)
 	}
 }

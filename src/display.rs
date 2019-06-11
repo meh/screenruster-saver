@@ -43,11 +43,12 @@ pub struct Backend {
 
 impl Display {
 	/// Open the matching Display.
-	pub fn open<N: AsRef<str>>(name: N, screen: i32, id: u64) -> error::Result<Display> {
+	pub fn open(name: Option<&str>, screen: i32, id: u64) -> error::Result<Display> {
 		unsafe {
-			let name    = CString::new(name.as_ref().as_bytes()).unwrap();
-			let display = xlib::XOpenDisplay(name.as_ptr()).as_mut().ok_or(error::Display::NotFound)?;
-			let root    = xlib::XRootWindow(display, screen);
+			let name = name.map(|n| CString::new(n).unwrap());
+			let display = xlib::XOpenDisplay(name.map(|n| n.as_ptr()).unwrap_or(ptr::null()))
+				.as_mut().ok_or(error::Display::NotFound)?;
+			let root = xlib::XRootWindow(display, screen);
 
 			let info = glx::glXChooseVisual(display, screen,
 				[glx::GLX_RGBA, glx::GLX_DEPTH_SIZE, 24, glx::GLX_DOUBLEBUFFER, 0].as_ptr() as *mut _)

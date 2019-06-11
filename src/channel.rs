@@ -34,7 +34,7 @@ pub enum Request {
 
 	/// Drawable target.
 	Target {
-		display: String,
+		display: Option<String>,
 		screen:  i32,
 		window:  u64,
 	},
@@ -114,7 +114,7 @@ impl Channel {
 
 						"target" => {
 							Request::Target {
-								display: json!(message["display"].as_str()).into(),
+								display: message["display"].as_str().map(Into::into),
 								screen:  json!(message["screen"].as_i32()),
 								window:  json!(message["window"].as_u64()),
 							}

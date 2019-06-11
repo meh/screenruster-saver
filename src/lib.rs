@@ -19,9 +19,11 @@ use std::env;
 
 #[cfg(feature = "renderer")]
 pub use gl;
+#[cfg(feature = "renderer")]
+pub use picto;
 
+pub use json;
 pub use log::{debug, error, info, log, log_enabled, trace, warn};
-pub use json::{JsonValue, object, array};
 
 #[macro_use]
 mod util;

@@ -76,12 +76,12 @@ pub enum Response {
 const STEP: u64 = 15_000_000;
 
 impl Renderer {
-	pub fn new<S: Saver + Send + 'static>(display: String, screen: i32, window: u64, mut saver: S) -> Renderer {
+	pub fn new<S: Saver + Send + 'static>(display: Option<String>, screen: i32, window: u64, mut saver: S) -> Renderer {
 		let (sender, i_receiver) = unbounded();
 		let (i_sender, receiver) = unbounded();
 
 		thread::spawn(move || {
-			let mut display  = Display::open(display, screen, window).unwrap();
+			let mut display  = Display::open(display.as_ref().map(AsRef::as_ref), screen, window).unwrap();
 			let mut blank    = false;
 			let mut throttle = false;
 			let mut skip     = false;
@@ -219,8 +219,9 @@ impl Renderer {
 				}
 
 				// If the rendering was too fast, throttle it at 60 FPS.
-				if now.elapsed().as_nanosecs() < 16_000_000 {
-					thread::sleep(Duration::new(0, 16_000_000 - now.elapsed().as_nanosecs() as u32));
+				let elapsed = now.elapsed().as_nanosecs();
+				if elapsed < 16_000_000 {
+					thread::sleep(Duration::new(0, 16_000_000 - elapsed as u32));
 				}
 			}
 

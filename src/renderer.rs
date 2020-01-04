@@ -93,7 +93,7 @@ impl Renderer {
 				let image = gl::texture::RawImage2d::from_raw_rgba_reversed(
 					&image.into_raw(), size);
 
-				gl::texture::Texture2d::new(&display.context(), image).unwrap()
+				gl::texture::SrgbTexture2d::new(&display.context(), image).unwrap()
 			};
 
 			// Initialize the saver.

@@ -76,7 +76,7 @@ pub fn init() -> Result<Channel> {
 		});
 
 		if let Ok(log) = env::var("RUST_LOG") {
-			builder.parse(&log);
+			builder.parse_filters(&log);
 		}
 
 		builder.init();
